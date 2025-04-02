@@ -1,0 +1,15 @@
+# Add the following content to .gitignore
+echo "# Ignore API keys
+config.js
+
+# Ignore node modules if you use npm
+node_modules/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore editor files
+.vscode/
+*.sublime-*
+.idea/" > .gitignore

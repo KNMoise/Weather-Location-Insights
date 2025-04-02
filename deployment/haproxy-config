@@ -1,0 +1,12 @@
+nano deployment/haproxy-config
+# Add the following content:
+frontend http_front
+    bind *:80
+    stats uri /haproxy?stats
+    default_backend http_back
+
+backend http_back
+    balance roundrobin
+    option httpchk GET /
+    server web01 web01_ip:80 check
+    server web02 web02_ip:80 check

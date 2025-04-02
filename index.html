@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather & Location Insights</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Add Bootstrap for responsive design -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="text-center my-4">
+            <h1>Weather & Location Insights</h1>
+            <p class="lead">Get comprehensive information about any location</p>
+        </header>
+        
+        <div class="search-container my-4">
+            <div class="input-group">
+                <input type="text" id="location-input" class="form-control" placeholder="Enter city name...">
+                <button id="search-btn" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+        
+        <div class="error-container alert alert-danger d-none" id="error-container">
+            <p id="error-message"></p>
+        </div>
+        
+        <div class="results-container d-none" id="results-container">
+            <!-- Weather Section -->
+            <section id="weather-section" class="card mb-4">
+                <div class="card-header">
+                    <h2>Weather Forecast</h2>
+                </div>
+                <div class="card-body">
+                    <div id="current-weather" class="mb-3">
+                        <!-- Current weather will be displayed here -->
+                    </div>
+                    <div id="forecast" class="row">
+                        <!-- 5-day forecast will be displayed here -->
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Air Quality Section -->
+            <section id="air-quality-section" class="card mb-4">
+                <div class="card-header">
+                    <h2>Air Quality</h2>
+                </div>
+                <div class="card-body" id="air-quality-data">
+                    <!-- Air quality data will be displayed here -->
+                </div>
+            </section>
+            
+            <!-- Points of Interest Section -->
+            <section id="poi-section" class="card mb-4">
+                <div class="card-header">
+                    <h2>Nearby Points of Interest</h2>
+                </div>
+                <div class="card-body">
+                    <div id="poi-list" class="row">
+                        <!-- Points of interest will be displayed here -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
