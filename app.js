@@ -29,6 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Add event listeners for popular searches
+    document.querySelectorAll('.popular-searches .btn').forEach(button => {
+        button.addEventListener('click', function() {
+            searchInput.value = this.textContent.trim();
+            searchLocation();
+        });
+    });
+
     // Try to get user's location on page load
     getCurrentLocation();
 });
@@ -73,7 +81,7 @@ function searchLocation() {
     fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${CONFIG.OPENCAGE_API_KEY}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to geocode location');
+                throw new Error(`Failed to geocode location: ${response.status}`);
             }
             return response.json();
         })
@@ -98,21 +106,42 @@ function searchLocation() {
  * @param {number} longitude - Longitude coordinate
  * @param {object} geocodeResult - Optional geocode result with location details
  */
-function fetchLocationData(latitude, longitude, geocodeResult = null) {
-    Promise.all([
-        fetchWeatherData(latitude, longitude),
-        fetchLocationDetails(latitude, longitude, geocodeResult)
-    ])
-        .then(([weatherData, locationData]) => {
-            updateUI(weatherData, locationData);
-            initMap(latitude, longitude, locationData.name);
-            hideLoading();
-            showContent();
-        })
-        .catch(error => {
-            console.error('Data fetch error:', error);
+async function fetchLocationData(latitude, longitude, geocodeResult = null) {
+    try {
+        // Retry logic for API calls
+        const retryFetch = async (fetchFunction, retries = 3) => {
+            for (let attempt = 0; attempt < retries; attempt++) {
+                try {
+                    return await fetchFunction();
+                } catch (error) {
+                    if (attempt === retries - 1) throw error;
+                }
+            }
+        };
+
+        // Fetch weather and location data in parallel
+        const [weatherData, locationData] = await Promise.all([
+            retryFetch(() => fetchWeatherData(latitude, longitude)),
+            retryFetch(() => fetchLocationDetails(latitude, longitude, geocodeResult))
+        ]);
+
+        // Update the UI with the fetched data
+        updateUI(weatherData, locationData);
+        initMap(latitude, longitude, locationData.name);
+        hideLoading();
+        showContent();
+    } catch (error) {
+        console.error('Data fetch error:', error);
+
+        // Show specific error messages based on the error type
+        if (error.message.includes('Failed to fetch weather data')) {
+            showError('Unable to fetch weather data. Please check your API key or try again later.');
+        } else if (error.message.includes('Failed to fetch location details')) {
+            showError('Unable to fetch location details. Please check your API key or try again later.');
+        } else {
             showError('Unable to fetch data for this location. Please try again later.');
-        });
+        }
+    }
 }
 
 /**
@@ -122,10 +151,10 @@ function fetchLocationData(latitude, longitude, geocodeResult = null) {
  * @returns {Promise} Weather data promise
  */
 function fetchWeatherData(latitude, longitude) {
-    return fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely,hourly&units=metric&appid=${CONFIG.OPENWEATHER_API_KEY}`)
+    return fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely&units=metric&appid=${CONFIG.OPENWEATHER_API_KEY}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch weather data');
+                throw new Error(`Failed to fetch weather data: ${response.status}`);
             }
             return response.json();
         });
@@ -146,7 +175,7 @@ function fetchLocationDetails(latitude, longitude, geocodeResult = null) {
     return fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${CONFIG.OPENCAGE_API_KEY}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch location details');
+                throw new Error(`Failed to fetch location details: ${response.status}`);
             }
             return response.json();
         })
@@ -182,7 +211,7 @@ function processLocationData(geocodeData) {
         currencySymbol: annotations.currency?.symbol || '',
         flag: annotations.flag || '',
         callingCode: annotations.callingcode || '',
-        population: 'Data not available' // OpenCage doesn't provide population directly
+        population: 'Data not available' 
     };
 }
 
@@ -192,20 +221,23 @@ function processLocationData(geocodeData) {
  * @param {object} locationData - Location data from API
  */
 function updateUI(weatherData, locationData) {
-    updateWeatherSection(weatherData);
+    updateWeatherSection(weatherData, locationData);
     updateLocationSection(locationData, weatherData);
+    updateHourlyForecast(weatherData);
+    createForecastChart(weatherData);
 }
 
 /**
  * Update the weather section of the UI
  * @param {object} weatherData - Weather data from API
+ * @param {object} locationData - Location data from API
  */
-function updateWeatherSection(weatherData) {
+function updateWeatherSection(weatherData, locationData) {
     const current = weatherData.current;
     const daily = weatherData.daily;
 
     // Update current weather
-    document.getElementById('location-name').textContent = document.getElementById('search-input').value || 'Current Location';
+    document.getElementById('location-name').textContent = locationData.name;
     document.getElementById('date-time').textContent = formatDate(current.dt, weatherData.timezone);
     document.getElementById('current-temp').textContent = `${Math.round(current.temp)}°C`;
     document.getElementById('feels-like').textContent = `Feels like: ${Math.round(current.feels_like)}°C`;
@@ -214,6 +246,7 @@ function updateWeatherSection(weatherData) {
     document.getElementById('wind').textContent = `${current.wind_speed} m/s`;
     document.getElementById('humidity').textContent = `${current.humidity}%`;
     document.getElementById('pressure').textContent = `${current.pressure} hPa`;
+    document.getElementById('visibility').textContent = `${(current.visibility / 1000).toFixed(1)} km`;
 
     // Update forecast
     const forecastContainer = document.getElementById('forecast-container');
@@ -235,6 +268,128 @@ function updateWeatherSection(weatherData) {
         
         forecastContainer.appendChild(forecastItem);
     });
+    
+    // Update sun progress bar
+    updateSunProgressBar(current.dt, current.sunrise, current.sunset);
+}
+
+/**
+ * Update the hourly forecast section
+ * @param {object} weatherData - Weather data from API
+ */
+function updateHourlyForecast(weatherData) {
+    const hourlyContainer = document.getElementById('hourly-forecast-container');
+    hourlyContainer.innerHTML = '';
+    
+    // Display the next 24 hours (24 data points)
+    const hourlyData = weatherData.hourly.slice(0, 24);
+    
+    hourlyData.forEach((hour, index) => {
+        if (index % 3 === 0) { // Show every 3 hours to avoid overcrowding
+            const hourlyItem = document.createElement('div');
+            hourlyItem.className = 'hourly-item';
+            
+            const hourTime = formatTime(hour.dt, weatherData.timezone, { hour: '2-digit' });
+            
+            hourlyItem.innerHTML = `
+                <p>${hourTime}</p>
+                <img src="https://openweathermap.org/img/wn/${hour.weather[0].icon}.png" alt="${hour.weather[0].description}">
+                <p>${Math.round(hour.temp)}°</p>
+            `;
+            
+            hourlyContainer.appendChild(hourlyItem);
+        }
+    });
+}
+
+/**
+ * Create forecast chart using Chart.js
+ * @param {object} weatherData - Weather data from API
+ */
+function createForecastChart(weatherData) {
+    const ctx = document.getElementById('forecast-chart');
+    
+    // Destroy existing chart if it exists
+    if (window.forecastChart) {
+        window.forecastChart.destroy();
+    }
+    
+    const daily = weatherData.daily.slice(0, 7);
+    const labels = daily.map(day => formatDay(day.dt, weatherData.timezone));
+    const maxTemps = daily.map(day => Math.round(day.temp.max));
+    const minTemps = daily.map(day => Math.round(day.temp.min));
+    
+    window.forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Max Temperature (°C)',
+                    data: maxTemps,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Min Temperature (°C)',
+                    data: minTemps,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Temperature Forecast (7 Days)'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Temperature (°C)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Update sun progress bar based on current time
+ * @param {number} currentTime - Current Unix timestamp
+ * @param {number} sunriseTime - Sunrise Unix timestamp
+ * @param {number} sunsetTime - Sunset Unix timestamp
+ */
+function updateSunProgressBar(currentTime, sunriseTime, sunsetTime) {
+    const sunProgress = document.getElementById('sun-progress');
+    const dayLength = sunsetTime - sunriseTime;
+    const timeSinceSunrise = currentTime - sunriseTime;
+    
+    // Calculate progress percentage
+    let progressPercent;
+    if (currentTime < sunriseTime) {
+        // Before sunrise
+        progressPercent = 0;
+    } else if (currentTime > sunsetTime) {
+        // After sunset
+        progressPercent = 100;
+    } else {
+        // During day
+        progressPercent = (timeSinceSunrise / dayLength) * 100;
+    }
+    
+    // Update progress bar
+    sunProgress.style.width = `${progressPercent}%`;
 }
 
 /**
@@ -259,6 +414,12 @@ function updateLocationSection(locationData, weatherData) {
     // Update additional info
     document.getElementById('currency').textContent = `Currency: ${locationData.currency} ${locationData.currencySymbol}`;
     document.getElementById('population').textContent = `Population: ${locationData.population}`;
+    
+    // Update language if element exists
+    const languageElement = document.getElementById('language');
+    if (languageElement) {
+        languageElement.textContent = `Language: ${locationData.components?.language || 'Data not available'}`;
+    }
 }
 
 /**
@@ -292,6 +453,44 @@ function initMap(latitude, longitude, locationName) {
     // Add a marker for the location
     currentMarker = L.marker([latitude, longitude]).addTo(map);
     currentMarker.bindPopup(`<b>${locationName}</b>`).openPopup();
+    
+    // Add map control buttons for different views
+    document.querySelectorAll('.btn-group .btn-outline-primary').forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.textContent.trim().toLowerCase();
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.btn-group .btn-outline-primary').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Change map tile layer based on view
+            if (view === 'satellite') {
+                map.eachLayer(layer => {
+                    if (layer !== currentMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                }).addTo(map);
+            } else {
+                map.eachLayer(layer => {
+                    if (layer !== currentMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+            }
+        });
+    });
 }
 
 /**
@@ -329,14 +528,16 @@ function formatDay(timestamp, timezone) {
  * Format a Unix timestamp to a time string
  * @param {number} timestamp - Unix timestamp
  * @param {string} timezone - Timezone string
+ * @param {object} options - Additional formatting options
  * @returns {string} Formatted time string
  */
-function formatTime(timestamp, timezone) {
+function formatTime(timestamp, timezone, options = {}) {
     const date = new Date(timestamp * 1000);
     return date.toLocaleString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
-        timeZone: timezone
+        timeZone: timezone,
+        ...options
     });
 }
 
@@ -373,3 +574,15 @@ function showError(message) {
     mainContent.classList.add('hidden');
     errorMessage.textContent = message;
 }
+
+// Event listener for the "More Insights" button
+document.addEventListener('DOMContentLoaded', () => {
+    const showMoreInsightsButton = document.getElementById('show-more-insights');
+    if (showMoreInsightsButton) {
+        showMoreInsightsButton.addEventListener('click', () => {
+            // This would typically show a modal or expand the insights section
+            // For now, just show an alert
+            alert('More location insights functionality coming soon!');
+        });
+    }
+});

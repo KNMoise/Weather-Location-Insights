@@ -3,122 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather & Location Insights</title>
+    <title>GlobalWeather | Weather & Location Insights</title>
+    <!-- Bootstrap CSS and icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Weather & Location Insights</h1>
-            <div class="search-container">
-                <input type="text" id="search-input" placeholder="Enter a location...">
-                <button id="search-button"><i class="fas fa-search"></i></button>
-                <button id="current-location-button"><i class="fas fa-map-marker-alt"></i></button>
-            </div>
-        </header>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-cloud-sun"></i> GlobalWeather
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
 
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Search Section -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="search-container card">
+                    <div class="card-body">
+                        <h2 class="text-center mb-4">Weather & Location Insights</h2>
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control" placeholder="Search for a city or location...">
+                            <button id="search-button" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button id="current-location-button" class="btn btn-outline-primary">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </button>
+                        </div>
+                        <div class="popular-searches mt-3">
+                            <span>Popular: </span>
+                            <button class="btn btn-sm btn-outline-secondary">New York</button>
+                            <button class="btn btn-sm btn-outline-secondary">London</button>
+                            <button class="btn btn-sm btn-outline-secondary">Tokyo</button>
+                            <button class="btn btn-sm btn-outline-secondary">Sydney</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
         <div class="loading-container" id="loading-container">
-            <div class="loading-spinner"></div>
-            <p>Loading data...</p>
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">Loading your weather data...</p>
         </div>
 
+        <!-- Error Message -->
         <div class="error-container" id="error-container">
-            <i class="fas fa-exclamation-circle"></i>
-            <p id="error-message">An error occurred. Please try again.</p>
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    <h4 class="mt-3">Oops!</h4>
+                    <p id="error-message">We couldn't find that location. Please try again.</p>
+                    <button class="btn btn-primary mt-3" onclick="document.getElementById('search-input').focus()">
+                        Try Again
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <main id="main-content" class="hidden">
-            <section class="weather-card">
-                <div class="weather-header">
-                    <h2 id="location-name">Location</h2>
-                    <p id="date-time">Date and Time</p>
-                </div>
-                <div class="weather-current">
-                    <div class="weather-icon-temp">
-                        <img id="weather-icon" src="" alt="Weather icon">
-                        <div class="temperature">
-                            <h2 id="current-temp">--°C</h2>
-                            <p id="feels-like">Feels like: --°C</p>
-                        </div>
-                    </div>
-                    <div class="weather-details">
-                        <p id="weather-description">Weather description</p>
-                        <div class="weather-metrics">
-                            <div class="metric">
-                                <i class="fas fa-wind"></i>
-                                <span id="wind">-- m/s</span>
+        <!-- Main Content (Initially Hidden) -->
+        <div id="main-content" class="hidden">
+            <!-- Overview Row -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="location-header card">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 id="location-name">Location</h2>
+                                <p id="date-time" class="mb-0">Date and Time</p>
                             </div>
-                            <div class="metric">
-                                <i class="fas fa-tint"></i>
-                                <span id="humidity">--%</span>
-                            </div>
-                            <div class="metric">
-                                <i class="fas fa-compress-arrows-alt"></i>
-                                <span id="pressure">-- hPa</span>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-primary me-2">
+                                    <i class="fas fa-star"></i> Favorite
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line"></i> View Forecast History</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-share-alt"></i> Share Location</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-bell"></i> Set Weather Alert</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="weather-forecast">
-                    <h3>5-Day Forecast</h3>
-                    <div class="forecast-container" id="forecast-container">
-                        <!-- Forecast items will be added here dynamically -->
-                    </div>
-                </div>
-            </section>
-
-            <section class="location-insights">
-                <div class="insights-header">
-                    <h2>Location Insights</h2>
-                </div>
-                <div class="insights-content">
-                    <div class="insights-item">
-                        <i class="fas fa-globe"></i>
-                        <div>
-                            <h3>Geographic Info</h3>
-                            <p id="country">Country: --</p>
-                            <p id="region">Region: --</p>
-                            <p id="coordinates">Coordinates: --, --</p>
-                        </div>
-                    </div>
-                    <div class="insights-item">
-                        <i class="fas fa-clock"></i>
-                        <div>
-                            <h3>Local Time</h3>
-                            <p id="timezone">Timezone: --</p>
-                            <p id="local-time">Current Time: --</p>
-                        </div>
-                    </div>
-                    <div class="insights-item">
-                        <i class="fas fa-sun"></i>
-                        <div>
-                            <h3>Sun Schedule</h3>
-                            <p id="sunrise">Sunrise: --</p>
-                            <p id="sunset">Sunset: --</p>
-                        </div>
-                    </div>
-                    <div class="insights-item">
-                        <i class="fas fa-info-circle"></i>
-                        <div>
-                            <h3>Additional Info</h3>
-                            <p id="population">Population: --</p>
-                            <p id="currency">Currency: --</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <div id="map-container" class="map-container">
-                <!-- Map will be loaded here -->
             </div>
-        </main>
 
-        <footer>
-            <p>&copy; 2025 Weather & Location Insights | Powered by OpenWeatherMap, OpenCage Geocoding, and LeafletJS</p>
-        </footer>
+            <div class="row">
+                <!-- Current Weather -->
+                <div class="col-lg-8">
+                    <div class="card current-weather mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="current-weather-main">
+                                        <img id="weather-icon" src="" alt="Weather icon" class="weather-icon">
+                                        <div class="temperature-container">
+                                            <h1 id="current-temp">--°C</h1>
+                                            <p id="feels-like" class="feels-like">Feels like: --°C</p>
+                                        </div>
+                                    </div>
+                                    <h3 id="weather-description" class="weather-description mt-3">Weather description</h3>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="weather-metrics-grid">
+                                        <div class="weather-metric">
+                                            <i class="fas fa-wind"></i>
+                                            <div>
+                                                <h5>Wind</h5>
+                                                <p id="wind">-- m/s</p>
+                                            </div>
+                                        </div>
+                                        <div class="weather-metric">
+                                            <i class="fas fa-tint"></i>
+                                            <div>
+                                                <h5>Humidity</h5>
+                                                <p id="humidity">--%</p>
+                                            </div>
+                                        </div>
+                                        <div class="weather-metric">
+                                            <i class="fas fa-compress-arrows-alt"></i>
+                                            <div>
+                                                <h5>Pressure</h5>
+                                                <p id="pressure">-- hPa</p>
+                                            </div>
+                                        </div>
+                                        <div class="weather-metric">
+                                            <i class="fas fa-eye"></i>
+                                            <div>
+                                                <h5>Visibility</h5>
+                                                <p id="visibility">-- km</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="hourly-forecast">
+                                        <h4>Today's Hourly Forecast</h4>
+                                        <div class="hourly-forecast-container" id="hourly-forecast-container">
+                                            <!-- Hourly forecast items will be added here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="col-lg-4">
+                    <div class="card location-insights mb-4">
+                        <div class="card-header">
+                            <h4>Location Insights</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="insights-item">
+                                <i class="fas fa-globe"></i>
+                                <div>
+                                    <h5>Geographic Info</h5>
+                                    <p id="country">Country: --</p>
+                                    <p id="region">Region: --</p>
+                                    <p id="coordinates">Coordinates: --, --</p>
+                                </div>
+                            </div>
+                            <div class="insights-item">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <h5>Local Time</h5>
+                                    <p id="timezone">Timezone: --</p>
+                                    <p id="local-time">Current Time: --</p>
+                                </div>
+                            </div>
+                            <div class="insights-item">
+                                <i class="fas fa-sun"></i>
+                                <div>
+                                    <h5>Sun Schedule</h5>
+                                    <p id="sunrise">Sunrise: --</p>
+                                    <p id="sunset">Sunset: --</p>
+                                    <div class="sun-progress-bar mt-2" id="sun-progress-bar">
+                                        <div class="sun-progress" id="sun-progress"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="insights-item">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <h5>Additional Info</h5>
+                                    <p id="population">Population: --</p>
+                                    <p id="currency">Currency: --</p>
+                                    <p id="language">Language: --</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <button class="btn btn-sm btn-outline-primary" id="show-more-insights">
+                                <i class="fas fa-plus-circle"></i> More Insights
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Forecast -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card weather-forecast mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">5-Day Forecast</h4>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary active">Temperature</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary">Precipitation</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary">Wind</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="forecast-container" id="forecast-container">
+                                <!-- Forecast items will be added here -->
+                            </div>
+                            <div class="forecast-chart mt-4">
+                                <canvas id="forecast-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map and Air Quality -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Interactive Map</h4>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary active">Standard</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary">Satellite</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary">Weather</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="map-container" class="map-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Air Quality</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="air-quality-circle" id="air-quality-circle">
+                                <div class="aqi-value">
+                                    <h2 id="aqi-value">--</h2>
+                                    <p>AQI</p>
+                                </div>
+                            </div>
+                            <div class="air-quality-text text-center mt-3">
+                                <h5 id="air-quality-status">--</h5>
+                                <p id="air-quality-description">Air quality information unavailable.</p>
+                            </div>
+                            <div class="air-pollutants mt-4">
+                                <h5>Pollutants</h5>
+                                <div class="pollutant-item">
+                                    <span>PM2.5</span>
+                                    <div class="progress">
+                                        <div id="pm25-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <span id="pm25-value">-- µg/m³</span>
+                                </div>
+                                <div class="pollutant-item">
+                                    <span>PM10</span>
+                                    <div class="progress">
+                                        <div id="pm10-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <span id="pm10-value">-- µg/m³</span>
+                                </div>
+                                <div class="pollutant-item">
+                                    <span>NO₂</span>
+                                    <div class="progress">
+                                        <div id="no2-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <span id="no2-value">-- µg/m³</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nearby Places -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Nearby Weather</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="nearby-places-container">
+                                <!-- Nearby weather places will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="footer mt-5">
+        <div class="container">
+            <div class="col-12 text-center">
+                <h5><i class="fas fa-cloud-sun"></i> GlobalWeather</h5>
+                <p>Get accurate weather forecasts and comprehensive location insights from around the world.</p>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p>&copy; 2025 GlobalWeather | Powered by OpenWeatherMap, OpenCage Geocoding, and LeafletJS</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <!-- LeafletJS for maps -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>

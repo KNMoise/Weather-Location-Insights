@@ -1,11 +1,6 @@
-# Dependency directories
-node_modules/
-bower_components/
+# Git ignore file for Weather-Location-Insights project
 
-# Build outputs
-dist/
-build/
-.tmp/
+
 
 # Environment files with API keys
 .env
